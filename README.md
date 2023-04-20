@@ -1,10 +1,10 @@
 # copilot-study
 
-NAVER Cloud copilot-study
-This repository is for the study of copilot.
+Next.js + Typescript + TailwindCSS
+with Copilot!
 
 # How to use
 
-npm run build
+`npm run build`
 
-npm run dev
+`npm run dev`
