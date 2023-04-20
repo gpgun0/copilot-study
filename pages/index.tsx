@@ -1,25 +1,39 @@
 import Image from "next/image";
 import { Inter } from "next/font/google";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
-interface TodolistProps {
-  todos: string[];
-  onAppendTask: (task: string) => void;
-  onDeleteTask: (task: string) => void;
+interface Todo {
+  task: string;
+  id: number;
 }
 
-const checkDuplicatedTask = (todo: string, todos: string[]) => {
-  const isDuplicated = todos.includes(todo);
-  if (isDuplicated) {
-    alert("Duplicated task");
-  }
-  return isDuplicated;
-};
+interface TodolistProps {
+  todos: Todo[];
+  onAppendTask: (task: string) => void;
+  onDeleteTask: (index: number) => void;
+  onEditTask: (taskId: number, newTask: string) => void;
+}
 
-const TodoList = ({ todos, onAppendTask, onDeleteTask }: TodolistProps) => {
+// const checkDuplicatedTask = (todo: string, todos: string[]) => {
+//   const isDuplicated = todos.includes(todo);
+//   if (isDuplicated) {
+//     alert("Duplicated task");
+//   }
+//   return isDuplicated;
+// };
+
+const TodoList = ({
+  todos,
+  onAppendTask,
+  onDeleteTask,
+  onEditTask,
+}: TodolistProps) => {
   const [todo, setTodo] = useState<string>("");
+  const [editingTask, setEditingTask] = useState<number | null>(null); // Update the type of editingTask to number | null
+
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTodo(e.target.value);
@@ -27,6 +41,7 @@ const TodoList = ({ todos, onAppendTask, onDeleteTask }: TodolistProps) => {
 
   const handleAppendTask = () => {
     if (checkDuplicatedTask(todo, todos)) {
+      alert("Duplicated task");
       return;
     }
 
@@ -36,13 +51,37 @@ const TodoList = ({ todos, onAppendTask, onDeleteTask }: TodolistProps) => {
     }
   };
 
-  const handleDeleteTask = (task: string) => {
+  const handleDeleteTask = (task: number) => {
     onDeleteTask(task);
   };
 
+  const handleEditTask = (taskId: number) => {
+    setEditingTask(taskId);
+  };
+
+  const checkDuplicatedTask = (todo: string, todos: Todo[]) => {
+    const isDuplicated = todos.some((task) => task.task === todo);
+
+    return isDuplicated;
+  };
+
+  const handleSaveTask = (taskId: number, newTask: string) => {
+    if (checkDuplicatedTask(newTask, todos)) {
+      const duplicatedIndex = todos.findIndex((task) => task.task === newTask);
+      if (todos[duplicatedIndex].id !== taskId) {
+        alert("Duplicated task");
+        return;
+      }
+    }
+    onEditTask(taskId, newTask);
+    setEditingTask(null);
+  };
+
   useEffect(() => {
-    console.log("Todos:", todos);
-  }, [todos]);
+    if (editingTask !== null && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [editingTask]);
 
   return (
     <div className="bg-green-100 min-h-screen flex items-center justify-center">
@@ -66,13 +105,31 @@ const TodoList = ({ todos, onAppendTask, onDeleteTask }: TodolistProps) => {
         <ul>
           {todos.map((task) => (
             <li
-              key={task}
+              key={task.id}
               className="flex items-center justify-between py-2 border-gray-300 border-b"
             >
-              <span className="text-lg">{task}</span>
+              {editingTask === task.id ? (
+                <input
+                  ref={inputRef}
+                  type="text"
+                  defaultValue={task.task}
+                  onBlur={(e) => {
+                    setEditingTask(null);
+                    handleSaveTask(task.id, e.target.value);
+                  }}
+                  className="text-lg flex-grow border-gray-300 border-2 p-2 rounded-lg focus:outline-none focus:border-green-500"
+                />
+              ) : (
+                <span
+                  className="text-lg"
+                  onClick={() => handleEditTask(task.id)}
+                >
+                  {task.task}
+                </span>
+              )}
               <button
-                onClick={() => handleDeleteTask(task)}
-                className="text-gray-500 hover:text-red-500 focus:outline-none"
+                onClick={() => handleDeleteTask(task.id)}
+                className="px-2 py-1 ml-2 rounded-md bg-red-500 text-white"
               >
                 Delete
               </button>
@@ -85,14 +142,25 @@ const TodoList = ({ todos, onAppendTask, onDeleteTask }: TodolistProps) => {
 };
 
 export default function Home() {
-  const [todos, setTodos] = useState<string[]>([]);
+  const [todos, setTodos] = useState<Todo[]>([]);
 
-  const handleAppendTask = (task: string) => {
-    setTodos([...todos, task]);
+  const handleAppendTask = (newTask: string) => {
+    setTodos((prevTodos) => [...prevTodos, { id: Date.now(), task: newTask }]);
   };
 
-  const handleDeleteTask = (task: string) => {
-    setTodos(todos.filter((t) => t !== task));
+  const handleDeleteTask = (taskId: number) => {
+    setTodos((prevTodos) => prevTodos.filter((todo) => todo.id !== taskId));
+  };
+
+  const handleEditTask = (taskId: number, newTask: string) => {
+    setTodos((prevTodos) =>
+      prevTodos.map((todo: Todo) => {
+        if (todo.id === taskId) {
+          return { ...todo, task: newTask };
+        }
+        return todo;
+      })
+    );
   };
 
   return (
@@ -101,6 +169,7 @@ export default function Home() {
         todos={todos}
         onAppendTask={handleAppendTask}
         onDeleteTask={handleDeleteTask}
+        onEditTask={handleEditTask}
       />
     </main>
   );
