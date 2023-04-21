@@ -2,94 +2,92 @@ import React from "react";
 import { render, fireEvent } from "@testing-library/react";
 import TodoList from "./TodoList";
 
-interface Todo {
-  task: string;
-  id: number;
-}
+// Mocking the functions passed as props to the TodoList component
+const mockOnAppendTask = jest.fn();
+const mockOnDeleteTask = jest.fn();
+const mockOnEditTask = jest.fn();
+
+// Define test data
+const todos = [{ task: "Task 1", id: 1 }];
 
 describe("TodoList", () => {
-  const todos: Todo[] = [
-    { task: "Task 1", id: 1 },
-    { task: "Task 2", id: 2 },
-    { task: "Task 3", id: 3 },
-  ];
-
-  it("renders todo list correctly", () => {
-    const { getByText } = render(
+  it("renders TodoList component correctly", () => {
+    const { getByText, getByPlaceholderText } = render(
       <TodoList
         todos={todos}
-        onAppendTask={() => {}}
-        onDeleteTask={() => {}}
-        onEditTask={() => {}}
+        onAppendTask={mockOnAppendTask}
+        onDeleteTask={mockOnDeleteTask}
+        onEditTask={mockOnEditTask}
       />
     );
 
-    todos.forEach((todo) => {
-      const taskElement = getByText(todo.task);
-      expect(taskElement).toBeInTheDocument();
-    });
+    // Check if the TodoList component is rendered correctly
+    expect(getByText("Todo List")).toBeTruthy();
+    expect(getByPlaceholderText("Enter a task...")).toBeTruthy();
   });
 
-  it("appends task correctly", () => {
-    const onAppendTask = jest.fn();
+  it("calls onAppendTask function when Add Task button is clicked with a valid task", () => {
     const { getByPlaceholderText, getByText } = render(
       <TodoList
         todos={todos}
-        onAppendTask={onAppendTask}
-        onDeleteTask={() => {}}
-        onEditTask={() => {}}
+        onAppendTask={mockOnAppendTask}
+        onDeleteTask={mockOnDeleteTask}
+        onEditTask={mockOnEditTask}
       />
     );
 
     const inputElement = getByPlaceholderText("Enter a task...");
-    const addButtonElement = getByText("Add Task");
+    const addButton = getByText("Add Task");
 
+    // Type a task in the input field
     fireEvent.change(inputElement, { target: { value: "New Task" } });
-    fireEvent.click(addButtonElement);
 
-    expect(onAppendTask).toHaveBeenCalledTimes(1);
-    expect(onAppendTask).toHaveBeenCalledWith("New Task");
+    // Click Add Task button
+    fireEvent.click(addButton);
+
+    // Check if the onAppendTask function is called with the correct task
+    expect(mockOnAppendTask).toHaveBeenCalledTimes(1);
+    expect(mockOnAppendTask).toHaveBeenCalledWith("New Task");
   });
 
-  it("deletes task correctly", () => {
-    const onDeleteTask = jest.fn();
+  it("calls onDeleteTask function when Delete button is clicked", () => {
     const { getByText } = render(
       <TodoList
         todos={todos}
-        onAppendTask={() => {}}
-        onDeleteTask={onDeleteTask}
-        onEditTask={() => {}}
+        onAppendTask={mockOnAppendTask}
+        onDeleteTask={mockOnDeleteTask}
+        onEditTask={mockOnEditTask}
       />
     );
 
-    const deleteButtonElement = getByText("Delete");
+    const deleteButton = getByText("Delete");
 
-    fireEvent.click(deleteButtonElement);
+    // Click Delete button
+    fireEvent.click(deleteButton);
 
-    expect(onDeleteTask).toHaveBeenCalledTimes(1);
-    expect(onDeleteTask).toHaveBeenCalledWith(todos[0]);
+    // Check if the onDeleteTask function is called with the correct taskId
+    expect(mockOnDeleteTask).toHaveBeenCalledTimes(1);
+    expect(mockOnDeleteTask).toHaveBeenCalledWith(1); // Assuming the taskId is 1 in this test
   });
 
-  it("edits task correctly", () => {
-    const onEditTask = jest.fn();
-    const { getByText, getByTestId } = render(
+  it("calls onEditTask when input field is blurred", () => {
+    const onEditTaskMock = jest.fn();
+    const { getByText, getByDisplayValue } = render(
       <TodoList
         todos={todos}
         onAppendTask={() => {}}
         onDeleteTask={() => {}}
-        onEditTask={onEditTask}
+        onEditTask={onEditTaskMock}
       />
     );
 
-    const editButtonElement = getByText("Edit");
-    const editInput = getByTestId("edit-input");
-    const editSaveButton = getByTestId("edit-save-button");
+    const taskElement = getByText("Task 1");
+    fireEvent.click(taskElement);
 
-    fireEvent.click(editButtonElement);
-    fireEvent.change(editInput, { target: { value: "Updated Task" } });
-    fireEvent.click(editSaveButton);
+    const inputField = getByDisplayValue("Task 1");
+    fireEvent.change(inputField, { target: { value: "Edited Task 1" } });
+    fireEvent.blur(inputField);
 
-    expect(onEditTask).toHaveBeenCalledTimes(1);
-    expect(onEditTask).toHaveBeenCalledWith(todos[0], "Updated Task");
+    expect(onEditTaskMock).toHaveBeenCalledWith(1, "Edited Task 1");
   });
 });

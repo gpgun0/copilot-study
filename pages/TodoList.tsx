@@ -101,7 +101,6 @@ const TodoList = ({
                   type="text"
                   defaultValue={task.task}
                   onBlur={(e) => {
-                    setEditingTask(null);
                     handleSaveTask(task.id, e.target.value);
                   }}
                   className="text-lg flex-grow border-gray-300 border-2 p-2 rounded-lg focus:outline-none focus:border-green-500"
